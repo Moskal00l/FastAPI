@@ -18,7 +18,6 @@ async def lifespan(app: FastAPI):
     yield
 
 
-
 app = FastAPI(
     title="Кулинарная книга API (Async Modular)",
     description="Модульная async версия. /docs для Swagger.",
@@ -153,7 +152,3 @@ async def delete_recipe(
 async def root() -> dict:
     """Корневой эндпоинт."""
     return {"message": "Модульная Async API. /docs"}
-    db.add(recipe)
-    db.commit()
-    db.refresh(recipe)
-    return recipe
