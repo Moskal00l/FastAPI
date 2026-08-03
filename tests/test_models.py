@@ -16,7 +16,7 @@ def test_recipe_creation():
     assert recipe.cooking_time == 30
     assert recipe.ingredients == "Мука, яйца, сахар"
     assert recipe.description == "Вкусный десерт"
-    assert recipe.views == 0  # Default value
+    assert recipe.views == 0
 
 
 def test_recipe_repr():
@@ -32,8 +32,8 @@ def test_recipe_repr():
     
     repr_str = repr(recipe)
     assert "RecipeDB" in repr_str
-    # Проверяем, что ID есть в repr (может быть в разном формате)
-    assert "1" in repr_str or "id=1" in repr_str
+    assert "id=1" in repr_str
+    assert "views=10" in repr_str
 
 
 def test_recipe_to_dict():
@@ -47,7 +47,25 @@ def test_recipe_to_dict():
         views=10
     )
     
-    # Проверяем, что метод to_dict существует
+    assert hasattr(recipe, 'to_dict')
+    recipe_dict = recipe.to_dict()
+    assert isinstance(recipe_dict, dict)
+    assert recipe_dict["id"] == 1
+    assert recipe_dict["name"] == "Тестовый рецепт"
+    assert recipe_dict["cooking_time"] == 30
+    assert recipe_dict["views"] == 10
+
+def test_recipe_to_dict():
+    """Test recipe to_dict method."""
+    recipe = RecipeDB(
+        id=1,
+        name="Тестовый рецепт",
+        cooking_time=30,
+        ingredients="Ингредиенты",
+        description="Описание",
+        views=10
+    )
+    
     assert hasattr(recipe, 'to_dict')
     recipe_dict = recipe.to_dict()
     assert isinstance(recipe_dict, dict)
