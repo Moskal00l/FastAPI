@@ -1,8 +1,6 @@
-"""FastAPI application entry point."""
-
 from typing import List
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,7 +13,6 @@ app = FastAPI(
     description="Модульная async версия. /docs для Swagger.",
     version="3.0.0",
 )
-
 
 @app.on_event("startup")
 async def startup() -> None:
@@ -83,7 +80,6 @@ async def create_recipe(
     db.add(db_recipe)
     await db.commit()
     await db.refresh(db_recipe)
-
     return RecipeDetail.from_orm(db_recipe)
 
 
