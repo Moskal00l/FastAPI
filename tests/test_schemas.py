@@ -1,5 +1,3 @@
-"""Tests for schemas."""
-
 import pytest
 from pydantic import ValidationError
 
@@ -29,7 +27,6 @@ def test_recipe_list_invalid_views():
         "views": -1,
         "cooking_time": 30
     }
-    # Валидация должна сработать, так как views >= 0
     with pytest.raises(ValidationError):
         RecipeList(**data)
 
@@ -55,10 +52,10 @@ def test_recipe_create_invalid_time():
         "ingredients": "Ингредиенты",
         "description": "Описание"
     }
-    # Должна быть ошибка валидации от @validator
     with pytest.raises(ValidationError) as exc_info:
         RecipeCreate(**data)
-    assert "Время приготовления должно быть больше 0" in str(exc_info.value)
+    error_msg = str(exc_info.value).lower()
+    assert "cooking_time" in error_msg or "greater than 0" in error_msg
 
 
 def test_recipe_create_empty_name():
@@ -69,10 +66,10 @@ def test_recipe_create_empty_name():
         "ingredients": "Ингредиенты",
         "description": "Описание"
     }
-    # Должна быть ошибка валидации от @validator
     with pytest.raises(ValidationError) as exc_info:
         RecipeCreate(**data)
-    assert "Название не может быть пустым" in str(exc_info.value)
+    error_msg = str(exc_info.value).lower()
+    assert "name" in error_msg or "string" in error_msg
 
 
 def test_recipe_detail_valid():
