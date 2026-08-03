@@ -103,3 +103,30 @@ async def delete_recipe(recipe_id: int, db: AsyncSession = Depends(get_db)) -> N
 async def root() -> dict:
     """Корневой эндпоинт."""
     return {"message": "Модульная Async API. /docs"}
+
+@app.put("/recipes/{recipe_id}", response_model=RecipeDetail)
+async def update_recipe(
+    recipe_id: int,
+    recipe_update: RecipeCreate,
+    db: AsyncSession = Depends(get_db)
+) -> RecipeDetail:
+    """Обновить рецепт."""
+    result = await db.execute(select(RecipeDB).where(RecipeDB.id == recipe_id))
+    recipe = result.scalar_one_or_none()
+
+    if recipe is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Рецепт не найден"
+        )
+
+    # Обновляем поля
+    recipe.name = recipe_update.name
+    recipe.cooking_time = recipe_update.cooking_time
+    recipe.ingredients = recipe_update.ingredients
+    recipe.description = recipe_update.description
+
+    await db.commit()
+    await db.refresh(recipe)
+
+    return RecipeDetail.from_orm(recipe)
