@@ -7,7 +7,6 @@ class RecipeList(BaseModel):
     views: int
     cooking_time: int
 
-    
     class Config:
         from_attributes = True
 
