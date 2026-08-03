@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, status
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +13,7 @@ app = FastAPI(
     description="Модульная async версия. /docs для Swagger.",
     version="3.0.0",
 )
+
 
 @app.on_event("startup")
 async def startup() -> None:
