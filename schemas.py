@@ -28,4 +28,3 @@ class RecipeDetail(BaseModel):
 
     class Config:
         from_attributes = True
-    
