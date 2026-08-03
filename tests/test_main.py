@@ -134,7 +134,7 @@ def test_get_recipes_pagination(client: TestClient):
     response = client.get("/recipes/?skip=5&limit=5")
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 5    }
+    assert len(data) == 5
     
     response = client.post("/recipes/", json=recipe_data)
     assert response.status_code == 400
