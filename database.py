@@ -48,4 +48,3 @@ async def drop_tables() -> None:
 async def get_engine():
     """Возвращает движок базы данных."""
     return engine
-    
