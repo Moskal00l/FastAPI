@@ -152,7 +152,7 @@ async def delete_recipe(
 @app.get("/")
 async def root() -> dict:
     """Корневой эндпоинт."""
-    return {"message": "Модульная Async API. /docs"}    )
+    return {"message": "Модульная Async API. /docs"}
     db.add(recipe)
     db.commit()
     db.refresh(recipe)
