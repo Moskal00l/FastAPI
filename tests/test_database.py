@@ -1,5 +1,3 @@
-"""Tests for database module."""
-
 import pytest
 from sqlalchemy import inspect
 
