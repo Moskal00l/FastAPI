@@ -55,7 +55,6 @@ async def get_recipe_detail(
     Получить детальную информацию о рецепте.
     Автоматически увеличивает счетчик просмотров на 1.
     """
-    # Атомарное обновление просмотров
     await db.execute(
         update(RecipeDB)
         .where(RecipeDB.id == recipe_id)
