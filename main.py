@@ -104,6 +104,7 @@ async def root() -> dict:
     """Корневой эндпоинт."""
     return {"message": "Модульная Async API. /docs"}
 
+
 @app.put("/recipes/{recipe_id}", response_model=RecipeDetail)
 async def update_recipe(
     recipe_id: int,
