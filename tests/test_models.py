@@ -2,7 +2,6 @@ from models import RecipeDB
 
 
 def test_recipe_creation():
-    """Test creating a recipe instance."""
     recipe = RecipeDB(
         name="Тестовый рецепт",
         cooking_time=30,
@@ -14,13 +13,9 @@ def test_recipe_creation():
     assert recipe.cooking_time == 30
     assert recipe.ingredients == "Мука, яйца, сахар"
     assert recipe.description == "Вкусный десерт"
-
-    assert recipe.views is not None
     assert recipe.views == 0
 
-
 def test_recipe_repr():
-    """Test recipe string representation."""
     recipe = RecipeDB(
         id=1,
         name="Тестовый рецепт",
