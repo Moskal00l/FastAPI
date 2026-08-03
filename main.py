@@ -1,65 +1,158 @@
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from contextlib import asynccontextmanager
+from typing import List
 
-from database import Base, get_db
-from main import app
+from fastapi import Depends, FastAPI, HTTPException, status
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from database import create_tables, get_db
 from models import RecipeDB
+from schemas import RecipeCreate, RecipeDetail, RecipeList
 
 
-# Тестовая база данных
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup/shutdown events."""
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    await create_tables()
+    yield
+
+
+
+app = FastAPI(
+    title="Кулинарная книга API (Async Modular)",
+    description="Модульная async версия. /docs для Swagger.",
+    version="3.0.0",
+    lifespan=lifespan,
 )
-TestingSessionLocal = sessionmaker(
-    autocommit=False, autoflush=False, bind=engine
-)
 
 
-def override_get_db():
-    """Override database dependency for testing."""
-    try:
-        db = TestingSessionLocal()
-        yield db
-    finally:
-        db.close()
-
-
-app.dependency_overrides[get_db] = override_get_db
-
-
-@pytest.fixture(scope="function")
-def db():
-    """Create test database."""
-    Base.metadata.create_all(bind=engine)
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-        Base.metadata.drop_all(bind=engine)
-
-
-@pytest.fixture(scope="function")
-def client(db):
-    """Create test client."""
-    with TestClient(app) as test_client:
-        yield test_client
-
-
-@pytest.fixture(scope="function")
-def sample_recipe(db):
-    """Create sample recipe for testing."""
-    recipe = RecipeDB(
-        name="Тестовый рецепт",
-        cooking_time=30,
-        ingredients="Мука, яйца, сахар",
-        description="Вкусный десерт",
-        views=0
+@app.get("/recipes/", response_model=List[RecipeList])
+async def get_recipes(
+    skip: int = 0,
+    limit: int = 100,
+    db: AsyncSession = Depends(get_db),
+) -> List[RecipeList]:
+    """
+    Получить список рецептов для главного экрана.
+    Сортировка: по просмотрам (убывание), затем по времени готовки (возрастание).
+    """
+    result = await db.execute(
+        select(RecipeDB)
+        .order_by(RecipeDB.views.desc(), RecipeDB.cooking_time.asc())
+        .offset(skip)
+        .limit(limit)
     )
+    recipes = result.scalars().all()
+    return [RecipeList.model_validate(r) for r in recipes]
+
+
+@app.get("/recipes/{recipe_id}", response_model=RecipeDetail)
+async def get_recipe_detail(
+    recipe_id: int,
+    db: AsyncSession = Depends(get_db),
+) -> RecipeDetail:
+    """
+    Получить детальную информацию о рецепте.
+    Автоматически увеличивает счетчик просмотров на 1.
+    """
+    # Атомарное обновление просмотров
+    await db.execute(
+        update(RecipeDB)
+        .where(RecipeDB.id == recipe_id)
+        .values(views=RecipeDB.views + 1)
+    )
+    await db.commit()
+
+    # Получаем обновленный рецепт
+    result = await db.execute(select(RecipeDB).where(RecipeDB.id == recipe_id))
+    recipe = result.scalar_one_or_none()
+
+    if recipe is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Рецепт не найден",
+        )
+
+    return RecipeDetail.model_validate(recipe)
+
+
+@app.post("/recipes/", response_model=RecipeDetail, status_code=status.HTTP_201_CREATED)
+async def create_recipe(
+    recipe: RecipeCreate,
+    db: AsyncSession = Depends(get_db),
+) -> RecipeDetail:
+    """
+    Создать новый рецепт.
+    """
+    if recipe.cooking_time <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Время приготовления должно быть больше 0",
+        )
+
+    # Используем model_dump() вместо dict() (Pydantic V2)
+    db_recipe = RecipeDB(**recipe.model_dump(), views=0)
+    db.add(db_recipe)
+    await db.commit()
+    await db.refresh(db_recipe)
+
+    return RecipeDetail.model_validate(db_recipe)
+
+
+@app.put("/recipes/{recipe_id}", response_model=RecipeDetail)
+async def update_recipe(
+    recipe_id: int,
+    recipe_update: RecipeCreate,
+    db: AsyncSession = Depends(get_db),
+) -> RecipeDetail:
+    """
+    Обновить рецепт.
+    """
+    result = await db.execute(select(RecipeDB).where(RecipeDB.id == recipe_id))
+    recipe = result.scalar_one_or_none()
+
+    if recipe is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Рецепт не найден",
+        )
+
+    # Обновляем поля
+    recipe.name = recipe_update.name
+    recipe.cooking_time = recipe_update.cooking_time
+    recipe.ingredients = recipe_update.ingredients
+    recipe.description = recipe_update.description
+
+    await db.commit()
+    await db.refresh(recipe)
+
+    return RecipeDetail.model_validate(recipe)
+
+
+@app.delete("/recipes/{recipe_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_recipe(
+    recipe_id: int,
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """Удалить рецепт."""
+    result = await db.execute(select(RecipeDB).where(RecipeDB.id == recipe_id))
+    recipe = result.scalar_one_or_none()
+
+    if recipe is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Рецепт не найден",
+        )
+
+    await db.delete(recipe)
+    await db.commit()
+
+
+@app.get("/")
+async def root() -> dict:
+    """Корневой эндпоинт."""
+    return {"message": "Модульная Async API. /docs"}    )
     db.add(recipe)
     db.commit()
     db.refresh(recipe)
