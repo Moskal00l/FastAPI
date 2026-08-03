@@ -63,7 +63,7 @@ async def get_recipe_detail(
     )
     await db.commit()
 
-    # Получаем обновленный рецепты
+    # Получаем обновленный рецепт
     result = await db.execute(select(RecipeDB).where(RecipeDB.id == recipe_id))
     recipe = result.scalar_one_or_none()
 
