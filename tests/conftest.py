@@ -1,59 +1,64 @@
-"""Pytest configuration and fixtures."""
-
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 from database import Base, get_db
 from main import app
 from models import RecipeDB
 
+TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
-# Тестовая база данных
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
-
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
-TestingSessionLocal = sessionmaker(
-    autocommit=False, autoflush=False, bind=engine
+test_engine = create_async_engine(
+    TEST_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    echo=False,
 )
 
+TestAsyncSessionLocal = async_sessionmaker(
+    test_engine,
+    expire_on_commit=False,
+)
 
-def override_get_db():
-    """Override database dependency for testing."""
-    try:
-        db = TestingSessionLocal()
-        yield db
-    finally:
-        db.close()
+
+async def override_get_db():
+    """Override database dependency for testing (асинхронная версия)."""
+    async with TestAsyncSessionLocal() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
 
 
 app.dependency_overrides[get_db] = override_get_db
 
 
 @pytest.fixture(scope="function")
-def db():
-    """Create test database."""
-    Base.metadata.create_all(bind=engine)
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-        Base.metadata.drop_all(bind=engine)
+async def db():
+    """Create test database with tables."""
+
+    async with test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    
+    async with TestAsyncSessionLocal() as session:
+        yield session
+    
+    async with test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 
 
 @pytest.fixture(scope="function")
-def client(db):
-    """Create test client."""
-    with TestClient(app) as test_client:
+async def client():
+    """Create async test client."""
+    async with AsyncClient(app=app, base_url="http://test") as test_client:
         yield test_client
 
 
 @pytest.fixture(scope="function")
-def sample_recipe(db):
+async def sample_recipe(db):
     """Create sample recipe for testing."""
     recipe = RecipeDB(
         name="Тестовый рецепт",
@@ -63,6 +68,9 @@ def sample_recipe(db):
         views=0
     )
     db.add(recipe)
-    db.commit()
-    db.refresh(recipe)
+    await db.commit()
+    await db.refresh(recipe)
     return recipe
+
+
+pytest_plugins = ['pytest_asyncio']
