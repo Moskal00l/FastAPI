@@ -21,7 +21,7 @@ TestAsyncSessionLocal = async_sessionmaker(
 
 
 async def override_get_db():
-    """Override database dependency for testing (асинхронная версия)."""
+    """Override database dependency for testing."""
     async with TestAsyncSessionLocal() as session:
         try:
             yield session
@@ -39,7 +39,6 @@ app.dependency_overrides[get_db] = override_get_db
 @pytest.fixture(scope="function")
 async def db():
     """Create test database with tables."""
-
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
@@ -71,6 +70,3 @@ async def sample_recipe(db):
     await db.commit()
     await db.refresh(recipe)
     return recipe
-
-
-pytest_plugins = ['pytest_asyncio']
