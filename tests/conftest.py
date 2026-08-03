@@ -1,13 +1,16 @@
+"""Pytest configuration and fixtures."""
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from database import Base, get_db, engine as async_engine, create_tables, drop_tables
+from database import Base, get_db
 from main import app
 from models import RecipeDB
 
 
+# Тестовая база данных
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 
 engine = create_engine(
@@ -33,15 +36,12 @@ app.dependency_overrides[get_db] = override_get_db
 @pytest.fixture(scope="function")
 def db():
     """Create test database."""
-    # Создаем таблицы
     Base.metadata.create_all(bind=engine)
-    
     db = TestingSessionLocal()
     try:
         yield db
     finally:
         db.close()
-        # Удаляем таблицы после теста
         Base.metadata.drop_all(bind=engine)
 
 
@@ -59,7 +59,8 @@ def sample_recipe(db):
         name="Тестовый рецепт",
         cooking_time=30,
         ingredients="Мука, яйца, сахар",
-        description="Вкусный десерт"
+        description="Вкусный десерт",
+        views=0
     )
     db.add(recipe)
     db.commit()
