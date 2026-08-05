@@ -15,7 +15,6 @@ def test_recipe_creation():
     assert recipe.cooking_time == 30
     assert recipe.ingredients == "Мука, яйца, сахар"
     assert recipe.description == "Вкусный десерт"
-    # Проверяем, что атрибут views существует
     assert hasattr(recipe, "views")
 
 
@@ -28,9 +27,7 @@ def test_recipe_repr():
         description="Описание"
     )
     repr_str = repr(recipe)
-    # Проверяем, что repr содержит имя класса
     assert "RecipeDB" in repr_str
-    # Также проверяем, что repr содержит id (может быть None)
     assert "id" in repr_str or "RecipeDB" in repr_str
 
 
@@ -58,8 +55,6 @@ def test_recipe_default_views():
         ingredients="Ингредиенты",
         description="Описание"
     )
-    # views может быть None или 0, проверяем что он существует
     assert hasattr(recipe, "views")
-    # Если views есть, он должен быть числом
     if recipe.views is not None:
         assert isinstance(recipe.views, int)
