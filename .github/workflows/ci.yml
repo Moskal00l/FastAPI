@@ -32,7 +32,7 @@ jobs:
         run: black --check --diff app/
       
       - name: Run isort (imports order)
-        run: isort --check-only app/
+        run: isort --check-only --profile=black app/
       
       - name: Run mypy (type checking)
         run: mypy app/ --ignore-missing-imports
