@@ -54,7 +54,6 @@ def test_recipe_create_with_zero_time():
         "ingredients": "Мука, яйца, сахар",
         "description": "Вкусный десерт"
     }
-    # Схема принимает любые значения, валидация в приложении
     recipe = RecipeCreate(**data)
     assert recipe.cooking_time == 0
 
@@ -67,7 +66,6 @@ def test_recipe_create_empty_name():
         "ingredients": "Мука, яйца, сахар",
         "description": "Вкусный десерт"
     }
-    # Схема принимает пустые строки
     recipe = RecipeCreate(**data)
     assert recipe.name == ""
 
