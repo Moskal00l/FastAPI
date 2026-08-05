@@ -4,9 +4,9 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database import create_tables, get_db
-from models import RecipeDB
-from schemas import RecipeCreate, RecipeDetail, RecipeList
+from app.database import create_tables, get_db
+from app.models import RecipeDB
+from app.schemas import RecipeCreate, RecipeDetail, RecipeList
 
 app = FastAPI(
     title="Кулинарная книга API (Async Modular)",
